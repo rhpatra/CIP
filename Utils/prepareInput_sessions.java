@@ -4,7 +4,7 @@ import java.lang.*;
 import java.text.DecimalFormat;
 
 
-public class prepareInputD2V_sessions {
+public class prepareInput_sessions {
 
     public static LinkedHashMap<String,LinkedHashMap<String,Long>> userProfiles= new LinkedHashMap<String,LinkedHashMap<String,Long>>();
     
