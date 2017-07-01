@@ -121,16 +121,20 @@ def main():
     sc.broadcast(deltaprofiles)
    
     
+    #RDD with user info
     usersRDD=sc.parallelize(userprofiles).repartition(sqrtpartitionCount)
     combinationsRDD=usersRDD.cartesian(usersRDD).filter(lambda p: p[0]!=p[1])
     
+    #RDD for similarities between users
     usersimRDD=combinationsRDD.map(lambda p: par_updateSimilarity(p[0],p[1])).filter(lambda p: p[1]>=0).reduceByKey(lambda x,y:x+y,numPartitions=partitionCount)
     
     tempSimList=usersimRDD.collect()
 
     usersimRDD1=usersimRDD.map(lambda x: [int(x[0][0]),int(x[0][1]),int(x[1])]).sortBy(lambda x: x[0],numPartitions=partitionCount)
-    user_sims=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey(numPartitions=partitionCount).map(lambda p: nearestNeighbors(p[0],list(p[1]),K)).collect()
     
+    #RDD for top-k Neighbors
+    usertopkRDD=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey(numPartitions=partitionCount).map(lambda p: nearestNeighbors(p[0],list(p[1]),K))
+    user_sims = usertopkRDD.collect()
     '''
     usersRDD=sc.parallelize(userprofiles)
     combinationsRDD=usersRDD.cartesian(usersRDD).filter(lambda p: p[0]!=p[1])
@@ -140,7 +144,8 @@ def main():
     tempSimList=usersimRDD.collect()
 
     usersimRDD1=usersimRDD.map(lambda x: [int(x[0][0]),int(x[0][1]),int(x[1])]).sortBy(lambda x: x[0])
-    user_sims=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey().map(lambda p: nearestNeighbors(p[0],list(p[1]),K)).collect()
+    usertopkRDD=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey().map(lambda p: nearestNeighbors(p[0],list(p[1]),K))
+    user_sims = usertopkRDD.collect()
     '''
    
     print "LEN: ",len(user_sims)
@@ -158,6 +163,7 @@ def main():
     combinationsRDD.unpersist()
     usersimRDD.unpersist()
     usersimRDD1.unpersist()
+    usertopkRDD.unpersist()
     
     del user_sims[:]
     del user_sim_list[:]
@@ -165,6 +171,7 @@ def main():
     del combinationsRDD
     del usersimRDD
     del usersimRDD1
+    del usertopkRDD
  
     #set of items for each user based on their preference
     preferenceSet=dict()
@@ -242,8 +249,9 @@ def main():
             usersimRDD= sc.parallelize(tempSimList).union(combinationsRDD.map(lambda p: par_updateSimilarity(p[0],p[1]))).filter(lambda p: p[1]>0).reduceByKey(lambda x,y:x+y)
             tempSimList=usersimRDD.collect()
             usersimRDD1=usersimRDD.map(lambda x: [int(x[0][0]),int(x[0][1]),int(x[1])]).sortBy(lambda x: x[0])
-            user_sims=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey().map(lambda p: nearestNeighbors(p[0],list(p[1]),K)).collect()
-    	    '''
+            usertopkRDD=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey().map(lambda p: nearestNeighbors(p[0],list(p[1]),K))
+	    user_sims = usertopkRDD.collect()
+	    '''
 	    
             usersRDD=sc.parallelize(userprofiles).repartition(sqrtpartitionCount)
             combinationsRDD=usersRDD.cartesian(usersRDD).filter(lambda p: p[0]!=p[1])
@@ -251,8 +259,9 @@ def main():
             usersimRDD= sc.parallelize(tempSimList).union(combinationsRDD.map(lambda p: par_updateSimilarity(p[0],p[1]))).filter(lambda p: p[1]>0).reduceByKey(lambda x,y:x+y,numPartitions=partitionCount)
             tempSimList=usersimRDD.collect()
             usersimRDD1=usersimRDD.map(lambda x: [int(x[0][0]),int(x[0][1]),int(x[1])]).sortBy(lambda x: x[0],numPartitions=partitionCount)
-            user_sims=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey(numPartitions=partitionCount).map(lambda p: nearestNeighbors(p[0],list(p[1]),K)).collect()
-	   
+            usertopkRDD=usersimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey(numPartitions=partitionCount).map(lambda p: nearestNeighbors(p[0],list(p[1]),K))
+	    user_sims = usertopkRDD.collect()
+
     
             for (user,neighbors) in user_sims:
                 #print "user-id: ",user," value: ",neighbors
@@ -266,10 +275,12 @@ def main():
             combinationsRDD.unpersist()
             usersimRDD.unpersist()
             usersimRDD1.unpersist()
+	    usertopkRDD.unpersist()
             del usersRDD
             del combinationsRDD
             del usersimRDD
             del usersimRDD1
+	    del usertopkRDD
     
             deltaprofiles.clear()
             #print "len: ",len(testprofiles)
