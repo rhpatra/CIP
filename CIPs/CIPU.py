@@ -334,7 +334,7 @@ if __name__ == "__main__":
     item_list=[]
     partitionCount=100
     sqrtpartitionCount=10
-    incrCount=10000000 #number of ratings after which incremental update done
+    incrCount=10000 #number of ratings after which incremental update done
     K=200 #number of neighbors
     N=10 #number of recommendations
     delta_H=40 #threshold
