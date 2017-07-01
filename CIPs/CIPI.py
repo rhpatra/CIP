@@ -124,14 +124,17 @@ def main():
     itemsimRDD=sc.parallelize(item_sim_list).reduceByKey(lambda x,y:x+y)
     itemsimRDD1=itemsimRDD.map(lambda x: [int(x[0][0]),int(x[0][1]),float(x[1])]).sortBy(lambda x: x[0])
     
-    item_sims=itemsimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey().map(lambda p: nearestNeighbors(p[0],list(p[1]),K)).collect()
+    itemtopKRDD=itemsimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey().map(lambda p: nearestNeighbors(p[0],list(p[1]),K))
+    item_sims = itemtopKRDD.collect()
     '''
-     
+    #RDD for item-item similarities
     itemsimRDD=sc.parallelize(item_sim_list).reduceByKey(lambda x,y:x+y,numPartitions=partitionCount).persist(StorageLevel.DISK_ONLY)
     itemsimRDD1=itemsimRDD.map(lambda x: [int(x[0][0]),int(x[0][1]),float(x[1])]).sortBy(lambda x: x[0],numPartitions=partitionCount).persist(StorageLevel.DISK_ONLY)
 
-    item_sims=itemsimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey(numPartitions=partitionCount).map(lambda p: nearestNeighbors(p[0],list(p[1]),K)).collect()
- 
+    #RDD for top-k neighbors
+    itemtopKRDD=itemsimRDD1.map(lambda p: keyOnFirstItem(p)).groupByKey(numPartitions=partitionCount).map(lambda p: nearestNeighbors(p[0],list(p[1]),K))
+    item_sims = itemtopKRDD.collect()
+	
     print "actual size: ",len(item_list)
     print "LEN: ",len(item_sims) 
     for (item,neighbors) in item_sims:
@@ -143,8 +146,10 @@ def main():
 
     itemsimRDD.unpersist()
     itemsimRDD1.unpersist()
+    itemtopKRDD.unpersist()
     del itemsimRDD
     del itemsimRDD1
+    del itemtopKRDD
     gc.collect()
     #set of items for each user based on their preference
     preferenceSet=dict()
