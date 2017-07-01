@@ -54,6 +54,7 @@ print "vocab built!"
 with DeepDist(basemodel,min_updates=10) as dd:
     dd.train(corpus, gradient, descent)
     dd.model.init_sims(replace=True)
+    #Save the model so that it can be loaded and trained later with new batches of CIPs
     dd.model.save_word2vec_format('w2v_CIP_neg4_i1_w3_sessions_1hr_win3_mc1_size200.model.bin',binary=True)
     
 print "Complete!"
