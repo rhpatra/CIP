@@ -1,4 +1,3 @@
-
 import multiprocessing
 from deepdist import DeepDist
 from gensim.models.word2vec import Word2Vec
